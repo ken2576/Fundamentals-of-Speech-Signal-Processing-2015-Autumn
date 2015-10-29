@@ -13,7 +13,7 @@ using namespace std;
 static void
 usage()
 {
-    cout << "Usage: modCalc [ <modellist.txt>, <testing_data.txt>, <result.txt>, <answer.txt> ]" << endl;
+    cout << "Usage: modCalc [ <modellist.txt>, <testing_data.txt>, <result.txt>, [answer.txt] ]" << endl;
 }
 
 static void
@@ -50,6 +50,7 @@ main (int argc, char** argv){
         model_filename = argv[1];
         test_filename = argv[2];
         result_filename = argv[3];
+        answer_filename = 0;
     }
     else
         myexit();
@@ -64,8 +65,10 @@ main (int argc, char** argv){
     viterbi(trainingSeqs, hmms, result, answerP);
 
     outputAnswer(result_filename, result, answerP);
-    readAns(answer_filename, answer);
-    calcAcc(answer, result);
+    if (answer_filename) {
+        readAns(answer_filename, answer);
+        calcAcc(answer, result);
+    }
     return 0;
 }
 
