@@ -1,0 +1,11 @@
+CFLAGS+= -g -Wall
+
+.PHONY: all clean
+
+mapping : MAKEFLAGS =  $(CFLAGS)
+
+mapping: mapping.cpp
+	g++ -o $@ $(MAKEFLAGS) mapping.cpp
+
+clean:
+	rm -f mapping
