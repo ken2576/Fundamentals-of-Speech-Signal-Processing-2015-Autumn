@@ -2,32 +2,32 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <locale>
+#include <stdint.h>
 
 using namespace std;
 
 
 int
 main(int argc, char** argv) {
-    const char *from, *to;
-    if (argc == 3) {
+    const char *from;
+    if (argc == 2) {
         from = argv[1];
-        to = argv[2];
     }
     else {
-        cout << "Usage: modCalc [ <mappingfrom.txt>, <mappingto.txt> ]" << endl;
         exit(-1);
     }
 
-    cout.imbue(locale("cht"));
-
-    wfstream fs;
-    wstring str;
-    fs.open(from, ios::in);
-    fs.imbue(locale("cht"));
-    while (getline(fs, str)) {
-        wcout << str << endl;
-    }
-
+    ifstream fs(from);
+    string str;
+    getline(fs, str);
+    cout << (unsigned char) str[0] << (unsigned char) str[1] << endl;
+    cout << (uint16_t) str[0] << "  " << (uint16_t) str[1] << endl;
+    unsigned short utf;
+    utf = ((unsigned short)str[0] << 8 | (unsigned short)str[1]);
+    cout << utf << endl;
+    unsigned char strtmp[10] = {0};
+    strtmp[0] = (unsigned char)(utf >> 8);
+    strtmp[1] = (unsigned char)(utf & 0xFF);
+    cout << strtmp << endl;
     return 0;
 }
