@@ -23,11 +23,11 @@ main(int argc, char** argv) {
     cout << (unsigned char) str[0] << (unsigned char) str[1] << endl;
     cout << (uint16_t) str[0] << "  " << (uint16_t) str[1] << endl;
     unsigned short utf;
-    utf = ((unsigned short)str[0] << 8 | (unsigned short)str[1]);
+    utf = ((unsigned char)str[0] << 8 | (unsigned char)str[1]);
     cout << utf << endl;
     unsigned char strtmp[10] = {0};
     strtmp[0] = (unsigned char)(utf >> 8);
-    strtmp[1] = (unsigned char)(utf & 0xFF);
+    strtmp[1] = (unsigned char)(utf & 0x00FF);
     cout << strtmp << endl;
     return 0;
 }

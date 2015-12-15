@@ -11,9 +11,9 @@ using namespace std;
 
 typedef map<unsigned short, vector<string> > Table;
 
-////////Static Variables/////////
+//Static Variables
 static Vocab voc;
-
+static vector< vector<string> > seq;
 
 static void
 usage()
@@ -29,12 +29,12 @@ myexit()
 }
 
 
-///////Inline Functions/////////
+//Inline Functions
 inline unsigned short
 big5toShort(string str)
 {
     unsigned short tmp;
-    tmp = ((unsigned short)str[0] << 8 | (unsigned short)str[1]);
+    tmp = ((unsigned char)str[0] << 8 | (unsigned char)str[1]);
     return tmp;
 }
 
@@ -43,7 +43,7 @@ shorttoBig5(unsigned short s)
 {
     string str("");
     str[0] = (unsigned char)(s >> 8);
-    str[1] = (unsigned char)(s & 0xFF);
+    str[1] = (unsigned char)(s & 0x00FF);
     return (str.c_str());
 }
 
@@ -61,10 +61,16 @@ getCharIndex(const char* word)
     return wid;
 }
 
-///////Forward Declaration/////////
+//Forward Declaration
+double getBigramProb(const char*, const char*);
+double getTrigramProb(const char*, const char*, const char*);
+
+//Printer Functions
+void printVector(const vector<string>&);
+void printSeq();
+
+//Utility Functions
 size_t strGetTok(const string&, string&, size_t pos = 0, const char delim = ' ');
-
-
 
 int main(int argc, char** argv) {
     const char *text, *zymap, *lm, *order;
@@ -85,14 +91,13 @@ int main(int argc, char** argv) {
 
     //create Ngram Language Model
     Ngram ngramlm(voc, orderNum);
-
     File lmFile(lm, "r");
     ngramlm.read(lmFile);
     lmFile.close();
 
     //create ZhuyingBig5 map
     fstream fs;
-    string str, tok, tmp;
+    string str, tok;
     vector<string> v;
     size_t pos;
     unsigned short key;
@@ -103,7 +108,6 @@ int main(int argc, char** argv) {
         tok.clear();
         pos = 0;
         pos = strGetTok(str, tok, pos);
-        tmp = tok;
         key = big5toShort(tok.c_str());
         while (pos != string::npos) {
             pos = strGetTok(str, tok, pos);
@@ -111,18 +115,31 @@ int main(int argc, char** argv) {
         }
         tb[key] = v;
     }
+    fs.close();
 
+    //read text into seq
+    fs.open(text, ios::in);
+    while (getline(fs, str)) {
         v.clear();
-        str.clear();
-        Table::iterator it;
-        str = "\243t";
-        key = big5toShort(str);
-        cout << key << endl;
-        it = tb.find(key);
-        v = (*it).second;
-        for (size_t i = 0; i < v.size(); i++) {
-            cout << v[i] << " ";
+        tok.clear();
+        pos = 0;
+        while (pos != string::npos) {
+            pos = strGetTok(str, tok, pos);
+            v.push_back(tok);
         }
+        seq.push_back(v);
+    }
+    fs.close();
+
+    printSeq();
+    for (size_t i = 0; i < seq.size(); i++) {
+        //viterbi
+    }
+    Table::iterator it;
+    //str = str.substr(1, 2);
+    //key = big5toShort(str);
+    //it = tb.find(key);
+
     return 0;
 }
 
@@ -140,4 +157,63 @@ strGetTok(const string& str, string& tok, size_t pos, const char del)
     size_t end = str.find_first_of(del, start);
     tok = str.substr(start, end - start);
     return end;
+}
+
+
+// Get P(W2 | W1) -- bigram
+double
+getBigramProb(const char *w1, const char *w2)
+{
+    VocabIndex wid1 = voc.getIndex(w1);
+    VocabIndex wid2 = voc.getIndex(w2);
+
+    if(wid1 == Vocab_None)  //OOV
+        wid1 = voc.getIndex(Vocab_Unknown);
+    if(wid2 == Vocab_None)  //OOV
+        wid2 = voc.getIndex(Vocab_Unknown);
+
+    VocabIndex context[] = { wid1, Vocab_None };
+    return lm.wordProb( wid2, context);
+}
+
+// Get P(W3 | W1, W2) -- trigram
+double
+getTrigramProb(const char *w1, const char *w2, const char *w3)
+{
+    VocabIndex wid1 = voc.getIndex(w1);
+    VocabIndex wid2 = voc.getIndex(w2);
+    VocabIndex wid3 = voc.getIndex(w3);
+
+    if(wid1 == Vocab_None)  //OOV
+        wid1 = voc.getIndex(Vocab_Unknown);
+    if(wid2 == Vocab_None)  //OOV
+        wid2 = voc.getIndex(Vocab_Unknown);
+    if(wid3 == Vocab_None)  //OOV
+        wid3 = voc.getIndex(Vocab_Unknown);
+
+    VocabIndex context[] = { wid2, wid1, Vocab_None };
+    return lm.wordProb( wid3, context );
+}
+
+
+
+
+
+void
+printVector(const vector<string>& v)
+{
+    for (size_t i = 0; i < v.size(); i++) {
+        cout << v[i] << " ";
+    }
+}
+
+void
+printSeq()
+{
+    for (size_t i = 0; i < seq.size(); i++) {
+        for (size_t j = 0; j < seq[i].size(); j++) {
+            cout << seq[i][j] << " ";
+        }
+        cout << endl;
+    }
 }
