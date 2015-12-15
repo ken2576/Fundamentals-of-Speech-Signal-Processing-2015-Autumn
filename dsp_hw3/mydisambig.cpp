@@ -9,7 +9,7 @@
 
 using namespace std;
 
-typedef map<unsigned short, vector<unsigned short> > Table;
+typedef map<string, vector<string> > Table;
 
 ////////Static Variables/////////
 static Vocab voc;
@@ -31,7 +31,7 @@ myexit()
 
 ///////Inline Functions/////////
 inline unsigned short
-big5toShort(const char* str)
+big5toShort(string str)
 {
     unsigned short tmp;
     tmp = ((unsigned short)str[0] << 8 | (unsigned short)str[1]);
@@ -41,16 +41,16 @@ big5toShort(const char* str)
 inline const char*
 shorttoBig5(unsigned short s)
 {
-    unsigned char str[2] = {0};
+    string str("");
     str[0] = (unsigned char)(s >> 8);
     str[1] = (unsigned char)(s & 0xFF);
-    return (const char*)(str);
+    return (str.c_str());
 }
 
 inline VocabIndex
 getShortIndex(unsigned short word)
 {
-    VocabIndex wid = voc.getIndex(shorttoBig5(word));
+    VocabIndex wid = voc.getIndex((const char*)shorttoBig5(word));
     return wid;
 }
 
@@ -92,21 +92,35 @@ int main(int argc, char** argv) {
 
     //create ZhuyingBig5 map
     fstream fs;
-    string str, tok;
+    string str, tok, key, tmp;
+    vector<string> v;
     size_t pos;
+    unsigned short sh;
     Table tb;
     fs.open(zymap, ios::in);
-    while (getline(fs, str)) {
+    getline(fs, str);
+//    while (getline(fs, str)) {
+        v.clear();
         tok.clear();
         pos = 0;
         pos = strGetTok(str, tok, pos);
+        key = tok;
         while (pos != string::npos) {
             pos = strGetTok(str, tok, pos);
-            cout << tok << " ";
+            v.push_back(tok);
         }
-        cout << endl;
-    }
+        tb[key] = v;
+//    }
 
+        str.clear();
+        v.clear();
+        Table::iterator it;
+        str = "�t";
+        it = tb.begin();
+        v = (*it).second;
+        for (size_t i = 0; i < v.size(); i++) {
+            cout << v[i] << " ";
+        }
     return 0;
 }
 
