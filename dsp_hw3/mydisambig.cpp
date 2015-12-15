@@ -9,7 +9,7 @@
 
 using namespace std;
 
-typedef map<string, vector<string> > Table;
+typedef map<unsigned short, vector<string> > Table;
 
 ////////Static Variables/////////
 static Vocab voc;
@@ -92,31 +92,33 @@ int main(int argc, char** argv) {
 
     //create ZhuyingBig5 map
     fstream fs;
-    string str, tok, key, tmp;
+    string str, tok, tmp;
     vector<string> v;
     size_t pos;
-    unsigned short sh;
+    unsigned short key;
     Table tb;
     fs.open(zymap, ios::in);
-    getline(fs, str);
-//    while (getline(fs, str)) {
+    while (getline(fs, str)) {
         v.clear();
         tok.clear();
         pos = 0;
         pos = strGetTok(str, tok, pos);
-        key = tok;
+        tmp = tok;
+        key = big5toShort(tok.c_str());
         while (pos != string::npos) {
             pos = strGetTok(str, tok, pos);
             v.push_back(tok);
         }
         tb[key] = v;
-//    }
+    }
 
-        str.clear();
         v.clear();
+        str.clear();
         Table::iterator it;
-        str = "�t";
-        it = tb.begin();
+        str = "\243t";
+        key = big5toShort(str);
+        cout << key << endl;
+        it = tb.find(key);
         v = (*it).second;
         for (size_t i = 0; i < v.size(); i++) {
             cout << v[i] << " ";
