@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <cmath>
 #include <map>
 #include <vector>
 #include <fstream>
@@ -14,6 +15,7 @@ typedef map<unsigned short, vector<string> > Table;
 //Static Variables
 static Vocab voc;
 static vector< vector<string> > seq;
+static vector< vector<double> > delta;
 
 static void
 usage()
@@ -62,8 +64,11 @@ getCharIndex(const char* word)
 }
 
 //Forward Declaration
-double getBigramProb(const char*, const char*);
-double getTrigramProb(const char*, const char*, const char*);
+static double getUnigramProb(const char*);
+static double getBigramProb(const char*, const char*);
+static double getTrigramProb(const char*, const char*, const char*);
+
+void viterbi();
 
 //Printer Functions
 void printVector(const vector<string>&);
@@ -72,7 +77,9 @@ void printSeq();
 //Utility Functions
 size_t strGetTok(const string&, string&, size_t pos = 0, const char delim = ' ');
 
-int main(int argc, char** argv) {
+
+int
+main(int argc, char** argv) {
     const char *text, *zymap, *lm, *order;
     int orderNum;
     if (argc == 5) {
@@ -132,9 +139,9 @@ int main(int argc, char** argv) {
     fs.close();
 
     printSeq();
-    for (size_t i = 0; i < seq.size(); i++) {
+//    for (size_t i = 0; i < seq.size(); i++) {
         //viterbi
-    }
+//    }
     Table::iterator it;
     //str = str.substr(1, 2);
     //key = big5toShort(str);
@@ -159,9 +166,22 @@ strGetTok(const string& str, string& tok, size_t pos, const char del)
     return end;
 }
 
+// Get P(W1) -- unigram
+static double
+getUnigramProb(const char *w1)
+{
+    VocabIndex wid1 = voc.getIndex(w1);
+
+    if(wid1 == Vocab_None)  //OOV
+        wid1 = voc.getIndex(Vocab_Unknown);
+
+    VocabIndex context[] = { Vocab_None };
+    return lm.wordProb( wid1, context);
+}
+
 
 // Get P(W2 | W1) -- bigram
-double
+static double
 getBigramProb(const char *w1, const char *w2)
 {
     VocabIndex wid1 = voc.getIndex(w1);
@@ -177,7 +197,7 @@ getBigramProb(const char *w1, const char *w2)
 }
 
 // Get P(W3 | W1, W2) -- trigram
-double
+static double
 getTrigramProb(const char *w1, const char *w2, const char *w3)
 {
     VocabIndex wid1 = voc.getIndex(w1);
@@ -196,7 +216,10 @@ getTrigramProb(const char *w1, const char *w2, const char *w3)
 }
 
 
-
+void
+viterbi()
+{
+}
 
 
 void
