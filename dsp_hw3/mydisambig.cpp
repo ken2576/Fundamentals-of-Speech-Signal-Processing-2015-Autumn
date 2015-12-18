@@ -140,19 +140,19 @@ main(int argc, char** argv) {
         pos = 0;
         while (pos != string::npos) {
             pos = strGetTok(str, tok, pos);
-            if (strcmp(tok.c_str(), "\n") != 0)
+            if (tok != "")
                 vs.push_back(tok);
         }
         seq.push_back(vs);
     }
     fs.close();
 
-//    printSeq();
+    //printSeq();
 
     //viterbi
     vector<string> sentence;
-//    for (size_t sample = 0; sample < seq.size(); sample++) {
-//        viterbi(sample);
+    //for (size_t sample = 0; sample < seq.size(); sample++) {
+    //    viterbi(sample);
 
         viterbi(0);
         printDeltaMatrix(delta);
@@ -163,11 +163,7 @@ main(int argc, char** argv) {
             cout << sentence[w] << " ";
         }
         cout << "</s>\n";
-
-//    }
-    //str = str.substr(1, 2);
-    //key = big5toShort(str);
-    //it = tb.find(key);
+    //}
     return 0;
 }
 
@@ -256,8 +252,8 @@ viterbi(size_t k)
         psi.clear();
     }
 
-    delta.resize(seq[k].size());
-    psi.resize(seq[k].size());
+    delta.resize(seq[k].size() + 1);
+    psi.resize(seq[k].size() + 1);
 
     //initialization delta_0 = 1 (0.0 in log10)
     Table::iterator it;
@@ -269,12 +265,15 @@ viterbi(size_t k)
     it = tb.find(key);
     vi = (*it).second;
     for (size_t i = 0; i < vi.size(); i++) {
-        delta[0].push_back(0.0);
+        double p = getUnigramProb(shorttoBig5(vi[i]));
+        delta[0].push_back(p);
+        //delta[0].push_back(0.0);
     }
 
     //iterate
     double currProb = 0.0;
-    for (size_t t = 1; t < seq[k].size()-1; t++) {
+    string w1, w2;
+    for (size_t t = 1; t < seq[k].size(); t++) {
         str = seq[k][t];
         key = big5toShort(str.c_str());
         it = tb.find(key);
@@ -290,17 +289,36 @@ viterbi(size_t k)
             double maxProb = -INFINITY;
             unsigned short maxStateWord = 0;
             for (size_t i = 0; i < vi.size(); i++) {
-                double aij = getBigramProb(shorttoBig5(vi[i]), shorttoBig5(vj[j]));
-                currProb = delta[t-1][i] + aij;
+                w1 = shorttoBig5(vi[i]);
+                w2 = shorttoBig5(vj[j]);
+                double bj = getUnigramProb(w2.c_str());
+                double aij = getBigramProb(w1.c_str(), w2.c_str());
+                currProb = delta[t-1][i] + aij + bj;
+                //currProb = delta[t-1][i] + aij;
                 if (currProb > maxProb) {
                     maxProb = currProb;
-                    maxStateWord = vj[j];
+                    maxStateWord = vi[i];
                 }
             }
             delta[t].push_back(maxProb);
             psi[t].push_back(maxStateWord);
         }
     }
+    size_t end = seq[k].size()-1;
+    str = seq[k][end];
+    key = big5toShort(str.c_str());
+    it = tb.find(key);
+    vi = (*it).second;
+    double maxProb = -INFINITY;
+    unsigned short maxStateWord = 0;
+    for (size_t i = 0; i < delta[end].size(); i++) {
+        if (delta[end][i] > maxProb) {
+            maxProb = delta[end][i];
+            maxStateWord = vi[i];
+        }
+    }
+    delta[end+1].push_back(maxProb);
+    psi[end+1].push_back(maxStateWord);
 }
 
 vector<string>
@@ -308,7 +326,6 @@ backTrack()
 {
     vector<string> ret;
     for (size_t t = delta.size()-1; t > 0; --t) {
-        cout << t << endl;
         double maxProb = -INFINITY;
         unsigned short maxStateWord = 0;
         for (size_t i = 0; i < delta[t].size(); i++) {
@@ -364,10 +381,14 @@ void
 printPsiMatrix(const vector<vector<unsigned short> >& s)
 {
     cout << "======Psi======" << endl;
+    int count = 0;
     for (size_t i = 0; i < s.size(); i++) {
         for (size_t j = 0; j < s[i].size(); j++) {
+            count++;
             cout << s[i][j] << " ";
+            if ((count % 15) == 0)
+                cout << endl;
         }
-        cout << endl;
+        cout << endl << "---------------------------------------" << endl;
     }
 }
