@@ -45,21 +45,23 @@ big5toShort(const char* str)
     return tmp;
 }
 
-inline const char*
+inline unsigned char*
 shorttoBig5(unsigned short s)
 {
-    string str("");
+    unsigned char* str = new unsigned char [2];
     str[0] = (unsigned char)(s >> 8);
     str[1] = (unsigned char)(s & 0x00FF);
-    return (str.c_str());
+    return str;
 }
 
+/*
 inline VocabIndex
 getShortIndex(unsigned short word)
 {
     VocabIndex wid = voc.getIndex((const char*)shorttoBig5(word));
     return wid;
 }
+*/
 
 inline VocabIndex
 getCharIndex(const char* word)
@@ -151,19 +153,19 @@ main(int argc, char** argv) {
 
     //viterbi
     vector<string> sentence;
-    for (size_t sample = 0; sample < seq.size(); sample++) {
-        viterbi(sample);
+//    for (size_t sample = 0; sample < seq.size(); sample++) {
+//        viterbi(sample);
 
-    //    viterbi(0);
-        //printDeltaMatrix(delta);
-        //printPsiMatrix(psi);
+        viterbi(1);
+        printDeltaMatrix(delta);
+        printPsiMatrix(psi);
         sentence = backTrack();
         cout << "<s> ";
         for (size_t w = 0; w < sentence.size(); w++) {
             cout << sentence[w] << " ";
         }
         cout << "</s>\n";
-    }
+//    }
     return 0;
 }
 
@@ -188,11 +190,12 @@ static double
 getUnigramProb(const char *w1)
 {
     VocabIndex wid1 = voc.getIndex(w1);
+    VocabIndex wid2 = voc.getIndex("<s>");
 
     if(wid1 == Vocab_None)  //OOV
         wid1 = voc.getIndex(Vocab_Unknown);
 
-    VocabIndex context[] = { Vocab_None };
+    VocabIndex context[] = { wid2, Vocab_None };
     return lm->wordProb( wid1, context);
 }
 
@@ -265,14 +268,15 @@ viterbi(size_t k)
     it = tb.find(key);
     vi = (*it).second;
     for (size_t i = 0; i < vi.size(); i++) {
-        double p = getUnigramProb(shorttoBig5(vi[i]));
+        string ch;
+        ch.assign((const char*)(shorttoBig5(vi[i])));
+        double p = getUnigramProb(ch.c_str());
         delta[0].push_back(p);
-        //delta[0].push_back(0.0);
     }
 
     //iterate
     double currProb = 0.0;
-    string w1, w2;
+    unsigned char *w1, *w2;
     for (size_t t = 1; t < seq[k].size(); t++) {
         str = seq[k][t];
         key = big5toShort(str.c_str());
@@ -284,25 +288,23 @@ viterbi(size_t k)
         it = tb.find(key);
         vi = (*it).second;
 
-        double maxProb = -INFINITY;
-        unsigned short maxStateWord = 0;
-
+        double maxProb;
+        unsigned short maxStateWord;
         for (size_t j = 0; j < vj.size(); j++) {
             maxProb = -INFINITY;
             maxStateWord = 0;
             w2 = shorttoBig5(vj[j]);
-            double bj = getUnigramProb(w2.c_str());
+            //double bj = getUnigramProb(w2.c_str());
             for (size_t i = 0; i < vi.size(); i++) {
                 w1 = shorttoBig5(vi[i]);
-                double aij = getBigramProb(w1.c_str(), w2.c_str());
+                double aij = getBigramProb((const char*)(w1), (const char*)(w2));
                 currProb = delta[t-1][i] + aij;
-                //currProb = delta[t-1][i] + aij;
                 if (currProb > maxProb) {
                     maxProb = currProb;
                     maxStateWord = vi[i];
                 }
             }
-            maxProb += bj;
+            //maxProb += bj;
             delta[t].push_back(maxProb);
             psi[t].push_back(maxStateWord);
         }
@@ -332,13 +334,13 @@ backTrack()
         double maxProb = -INFINITY;
         unsigned short maxStateWord = 0;
         for (size_t i = 0; i < delta[t].size(); i++) {
-            double currProb = delta[t][i];
-            if (currProb > maxProb) {
-                maxProb = currProb;
+            if (delta[t][i] > maxProb) {
+                maxProb = delta[t][i];
                 maxStateWord = psi[t][i];
             }
         }
-        string str(shorttoBig5(maxStateWord));
+        string str;
+        str.assign((const char*)(shorttoBig5(maxStateWord)));
         ret.push_back(str);
     }
     reverse(ret.begin(), ret.end());
