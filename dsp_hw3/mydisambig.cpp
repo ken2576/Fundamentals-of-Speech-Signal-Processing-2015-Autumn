@@ -5,17 +5,22 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <limits>
+#include <algorithm>
 #include "./srilm-1.5.10/lm/src/Ngram.h"
 #include "./srilm-1.5.10/lm/src/Vocab.h"
 
 using namespace std;
 
-typedef map<unsigned short, vector<string> > Table;
+typedef map<unsigned short, vector<unsigned short> > Table;
 
 //Static Variables
 static Vocab voc;
 static vector< vector<string> > seq;
 static vector< vector<double> > delta;
+static vector< vector<unsigned short> > psi;
+static Table tb;
+static Ngram* lm = NULL;
 
 static void
 usage()
@@ -33,7 +38,7 @@ myexit()
 
 //Inline Functions
 inline unsigned short
-big5toShort(string str)
+big5toShort(const char* str)
 {
     unsigned short tmp;
     tmp = ((unsigned char)str[0] << 8 | (unsigned char)str[1]);
@@ -68,11 +73,14 @@ static double getUnigramProb(const char*);
 static double getBigramProb(const char*, const char*);
 static double getTrigramProb(const char*, const char*, const char*);
 
-void viterbi();
+void viterbi(size_t);
+vector<string> backTrack();
 
 //Printer Functions
 void printVector(const vector<string>&);
 void printSeq();
+void printDeltaMatrix(const vector<vector<double> >&);
+void printPsiMatrix(const vector<vector<unsigned short> >&);
 
 //Utility Functions
 size_t strGetTok(const string&, string&, size_t pos = 0, const char delim = ' ');
@@ -80,12 +88,12 @@ size_t strGetTok(const string&, string&, size_t pos = 0, const char delim = ' ')
 
 int
 main(int argc, char** argv) {
-    const char *text, *zymap, *lm, *order;
+    const char *text, *zymap, *lm_name, *order;
     int orderNum;
     if (argc == 5) {
         text = argv[1];
         zymap = argv[2];
-        lm = argv[3];
+        lm_name = argv[3];
         order = argv[4];
     }
     else
@@ -97,18 +105,17 @@ main(int argc, char** argv) {
     ss >> orderNum;
 
     //create Ngram Language Model
-    Ngram ngramlm(voc, orderNum);
-    File lmFile(lm, "r");
-    ngramlm.read(lmFile);
+    lm = new Ngram(voc, orderNum);
+    File lmFile(lm_name, "r");
+    lm->read(lmFile);
     lmFile.close();
 
     //create ZhuyingBig5 map
     fstream fs;
     string str, tok;
-    vector<string> v;
+    vector<unsigned short> v;
     size_t pos;
     unsigned short key;
-    Table tb;
     fs.open(zymap, ios::in);
     while (getline(fs, str)) {
         v.clear();
@@ -118,7 +125,7 @@ main(int argc, char** argv) {
         key = big5toShort(tok.c_str());
         while (pos != string::npos) {
             pos = strGetTok(str, tok, pos);
-            v.push_back(tok);
+            v.push_back(big5toShort(tok.c_str()));
         }
         tb[key] = v;
     }
@@ -126,27 +133,41 @@ main(int argc, char** argv) {
 
     //read text into seq
     fs.open(text, ios::in);
+    vector<string> vs;
     while (getline(fs, str)) {
-        v.clear();
+        vs.clear();
         tok.clear();
         pos = 0;
         while (pos != string::npos) {
             pos = strGetTok(str, tok, pos);
-            v.push_back(tok);
+            if (strcmp(tok.c_str(), "\n") != 0)
+                vs.push_back(tok);
         }
-        seq.push_back(v);
+        seq.push_back(vs);
     }
     fs.close();
 
-    printSeq();
-//    for (size_t i = 0; i < seq.size(); i++) {
-        //viterbi
+//    printSeq();
+
+    //viterbi
+    vector<string> sentence;
+//    for (size_t sample = 0; sample < seq.size(); sample++) {
+//        viterbi(sample);
+
+        viterbi(0);
+        printDeltaMatrix(delta);
+        printPsiMatrix(psi);
+        sentence = backTrack();
+        cout << "<s> ";
+        for (size_t w = 0; w < sentence.size(); w++) {
+            cout << sentence[w] << " ";
+        }
+        cout << "</s>\n";
+
 //    }
-    Table::iterator it;
     //str = str.substr(1, 2);
     //key = big5toShort(str);
     //it = tb.find(key);
-
     return 0;
 }
 
@@ -176,7 +197,7 @@ getUnigramProb(const char *w1)
         wid1 = voc.getIndex(Vocab_Unknown);
 
     VocabIndex context[] = { Vocab_None };
-    return lm.wordProb( wid1, context);
+    return lm->wordProb( wid1, context);
 }
 
 
@@ -193,7 +214,7 @@ getBigramProb(const char *w1, const char *w2)
         wid2 = voc.getIndex(Vocab_Unknown);
 
     VocabIndex context[] = { wid1, Vocab_None };
-    return lm.wordProb( wid2, context);
+    return lm->wordProb( wid2, context);
 }
 
 // Get P(W3 | W1, W2) -- trigram
@@ -212,15 +233,97 @@ getTrigramProb(const char *w1, const char *w2, const char *w3)
         wid3 = voc.getIndex(Vocab_Unknown);
 
     VocabIndex context[] = { wid2, wid1, Vocab_None };
-    return lm.wordProb( wid3, context );
+    return lm->wordProb( wid3, context );
 }
 
 
 void
-viterbi()
+viterbi(size_t k)
 {
+    //clear delta vector
+    if (!delta.empty()) {
+        for (size_t i = 0; i < delta.size(); i++) {
+            delta[i].clear();
+        }
+        delta.clear();
+    }
+
+    //clear psi vector
+    if (!psi.empty()) {
+        for (size_t i = 0; i < psi.size(); i++) {
+            psi[i].clear();
+        }
+        psi.clear();
+    }
+
+    delta.resize(seq[k].size());
+    psi.resize(seq[k].size());
+
+    //initialization delta_0 = 1 (0.0 in log10)
+    Table::iterator it;
+    string str;
+    vector<unsigned short> vi, vj;
+    unsigned short key;
+    str = seq[k][0];
+    key = big5toShort(str.c_str());
+    it = tb.find(key);
+    vi = (*it).second;
+    for (size_t i = 0; i < vi.size(); i++) {
+        delta[0].push_back(0.0);
+    }
+
+    //iterate
+    double currProb = 0.0;
+    for (size_t t = 1; t < seq[k].size()-1; t++) {
+        str = seq[k][t];
+        key = big5toShort(str.c_str());
+        it = tb.find(key);
+        vj = (*it).second;
+
+        str = seq[k][t-1];
+        key = big5toShort(str.c_str());
+        it = tb.find(key);
+        vi = (*it).second;
+
+
+        for (size_t j = 0; j < vj.size(); j++) {
+            double maxProb = -INFINITY;
+            unsigned short maxStateWord = 0;
+            for (size_t i = 0; i < vi.size(); i++) {
+                double aij = getBigramProb(shorttoBig5(vi[i]), shorttoBig5(vj[j]));
+                currProb = delta[t-1][i] + aij;
+                if (currProb > maxProb) {
+                    maxProb = currProb;
+                    maxStateWord = vj[j];
+                }
+            }
+            delta[t].push_back(maxProb);
+            psi[t].push_back(maxStateWord);
+        }
+    }
 }
 
+vector<string>
+backTrack()
+{
+    vector<string> ret;
+    for (size_t t = delta.size()-1; t > 0; --t) {
+        cout << t << endl;
+        double maxProb = -INFINITY;
+        unsigned short maxStateWord = 0;
+        for (size_t i = 0; i < delta[t].size(); i++) {
+            double currProb = delta[t][i];
+            if (currProb > maxProb) {
+                maxProb = currProb;
+                maxStateWord = psi[t][i];
+            }
+        }
+        string str(shorttoBig5(maxStateWord));
+        ret.push_back(str);
+    }
+    reverse(ret.begin(), ret.end());
+    return ret;
+}
 
 void
 printVector(const vector<string>& v)
@@ -236,6 +339,34 @@ printSeq()
     for (size_t i = 0; i < seq.size(); i++) {
         for (size_t j = 0; j < seq[i].size(); j++) {
             cout << seq[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+void
+printDeltaMatrix(const vector<vector<double> >& d)
+{
+    cout << "======Delta======" << endl;
+    int count = 0;
+    for (size_t i = 0; i < d.size(); i++) {
+        for (size_t j = 0; j < d[i].size(); j++) {
+            count++;
+            cout << d[i][j] << " ";
+            if ((count % 15) == 0)
+                cout << endl;
+        }
+        cout << endl << "---------------------------------------" << endl;
+    }
+}
+
+void
+printPsiMatrix(const vector<vector<unsigned short> >& s)
+{
+    cout << "======Psi======" << endl;
+    for (size_t i = 0; i < s.size(); i++) {
+        for (size_t j = 0; j < s[i].size(); j++) {
+            cout << s[i][j] << " ";
         }
         cout << endl;
     }
