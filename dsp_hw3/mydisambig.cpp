@@ -151,19 +151,19 @@ main(int argc, char** argv) {
 
     //viterbi
     vector<string> sentence;
-    //for (size_t sample = 0; sample < seq.size(); sample++) {
-    //    viterbi(sample);
+    for (size_t sample = 0; sample < seq.size(); sample++) {
+        viterbi(sample);
 
-        viterbi(0);
-        printDeltaMatrix(delta);
-        printPsiMatrix(psi);
+    //    viterbi(0);
+        //printDeltaMatrix(delta);
+        //printPsiMatrix(psi);
         sentence = backTrack();
         cout << "<s> ";
         for (size_t w = 0; w < sentence.size(); w++) {
             cout << sentence[w] << " ";
         }
         cout << "</s>\n";
-    //}
+    }
     return 0;
 }
 
@@ -284,22 +284,25 @@ viterbi(size_t k)
         it = tb.find(key);
         vi = (*it).second;
 
+        double maxProb = -INFINITY;
+        unsigned short maxStateWord = 0;
 
         for (size_t j = 0; j < vj.size(); j++) {
-            double maxProb = -INFINITY;
-            unsigned short maxStateWord = 0;
+            maxProb = -INFINITY;
+            maxStateWord = 0;
+            w2 = shorttoBig5(vj[j]);
+            double bj = getUnigramProb(w2.c_str());
             for (size_t i = 0; i < vi.size(); i++) {
                 w1 = shorttoBig5(vi[i]);
-                w2 = shorttoBig5(vj[j]);
-                double bj = getUnigramProb(w2.c_str());
                 double aij = getBigramProb(w1.c_str(), w2.c_str());
-                currProb = delta[t-1][i] + aij + bj;
+                currProb = delta[t-1][i] + aij;
                 //currProb = delta[t-1][i] + aij;
                 if (currProb > maxProb) {
                     maxProb = currProb;
                     maxStateWord = vi[i];
                 }
             }
+            maxProb += bj;
             delta[t].push_back(maxProb);
             psi[t].push_back(maxStateWord);
         }
