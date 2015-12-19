@@ -295,7 +295,7 @@ viterbi(size_t k)
             maxProb = -INFINITY;
             maxStateWord = 0;
             w2 = shorttoBig5(vj[j]);
-            //double bj = getUnigramProb(w2.c_str());
+            //double bj = getUnigramProb((const char*)(w2));
             for (size_t i = 0; i < vi.size(); i++) {
                 w1 = shorttoBig5(vi[i]);
                 //cout << w1 << " " << w2 << endl;
