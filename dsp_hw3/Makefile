@@ -2,11 +2,11 @@
 # For testing, you could uncomment them.
 SRIPATH ?= /home/ken/dsp/dsp_hw3/srilm-1.5.10
 MACHINE_TYPE ?= i686-m64
-LM ?= bigram.lm
+LM ?= srilm-1.5.10/bigram.lm
 
 CXX = g++
-#CXXFLAGS = -O3 -I$(SRIPATH)/include -w
-CXXFLAGS = -g -Wall -I$(SRIPATH)/include -w
+CXXFLAGS = -O3 -I$(SRIPATH)/include -w
+#CXXFLAGS = -g -Wall -I$(SRIPATH)/include -w
 vpath lib%.a $(SRIPATH)/lib/$(MACHINE_TYPE)
 
 TARGET = mydisambig
@@ -27,7 +27,7 @@ run:
 	@#TODO How to run your code toward different txt?
 	@for i in $(shell seq 1 10) ; do \
 		echo "Running $$i.txt"; \
-		./mydisambig testdata/$$i.txt $(TO) $(LM) 2 > result2/$$i.txt; \
+		./mydisambig testdata/$$i\_seq.txt $(TO) $(LM) 2 > result2/$$i.txt; \
 	done;
 map:
 	@#TODO How to map?
