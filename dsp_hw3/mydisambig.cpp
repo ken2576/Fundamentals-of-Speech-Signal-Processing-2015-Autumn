@@ -36,42 +36,12 @@ myexit()
 }
 
 
-//Inline Functions
-unsigned short
-big5toShort(const char* str)
-{
-    unsigned short tmp;
-    tmp = ((unsigned char)str[0] << 8 | (unsigned char)str[1]);
-    return tmp;
-}
-
-unsigned char*
-shorttoBig5(unsigned short s)
-{
-    unsigned char* str = new unsigned char [3];
-    str[0] = (unsigned char)(s >> 8);
-    str[1] = (unsigned char)(s & 0x00FF);
-    str[2] = NULL;
-    return str;
-}
-
-/*
-inline VocabIndex
-getShortIndex(unsigned short word)
-{
-    VocabIndex wid = voc.getIndex((const char*)shorttoBig5(word));
-    return wid;
-}
-*/
-
-VocabIndex
-getCharIndex(const char* word)
-{
-    VocabIndex wid = voc.getIndex(word);
-    return wid;
-}
 
 //Forward Declaration
+unsigned short big5toShort(const char*);
+unsigned char* shorttoBig5(unsigned short);
+VocabIndex getCharIndex(const char*);
+
 double getUnigramProb(const char*);
 double getBigramProb(const char*, const char*);
 double getTrigramProb(const char*, const char*, const char*);
@@ -170,6 +140,32 @@ main(int argc, char** argv) {
     return 0;
 }
 
+unsigned short
+big5toShort(const char* str)
+{
+    //bitmasking the character
+    unsigned short tmp;
+    tmp = ((unsigned char)str[0] << 8 | (unsigned char)str[1]);
+    return tmp;
+}
+
+unsigned char*
+shorttoBig5(unsigned short s)
+{
+    //need to use char[3] instead of string or will result in no output
+    unsigned char* str = new unsigned char [3];
+    str[0] = (unsigned char)(s >> 8);
+    str[1] = (unsigned char)(s & 0x00FF);
+    str[2] = NULL;
+    return str;
+}
+
+VocabIndex
+getCharIndex(const char* word)
+{
+    VocabIndex wid = voc.getIndex(word);
+    return wid;
+}
 
 
 size_t
