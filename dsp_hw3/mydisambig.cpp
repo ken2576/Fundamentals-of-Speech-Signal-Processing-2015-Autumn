@@ -37,7 +37,7 @@ myexit()
 
 
 //Inline Functions
-inline unsigned short
+unsigned short
 big5toShort(const char* str)
 {
     unsigned short tmp;
@@ -45,12 +45,13 @@ big5toShort(const char* str)
     return tmp;
 }
 
-inline unsigned char*
+unsigned char*
 shorttoBig5(unsigned short s)
 {
-    unsigned char* str = new unsigned char [2];
+    unsigned char* str = new unsigned char [3];
     str[0] = (unsigned char)(s >> 8);
     str[1] = (unsigned char)(s & 0x00FF);
+    str[2] = NULL;
     return str;
 }
 
@@ -63,7 +64,7 @@ getShortIndex(unsigned short word)
 }
 */
 
-inline VocabIndex
+VocabIndex
 getCharIndex(const char* word)
 {
     VocabIndex wid = voc.getIndex(word);
@@ -71,9 +72,9 @@ getCharIndex(const char* word)
 }
 
 //Forward Declaration
-static double getUnigramProb(const char*);
-static double getBigramProb(const char*, const char*);
-static double getTrigramProb(const char*, const char*, const char*);
+double getUnigramProb(const char*);
+double getBigramProb(const char*, const char*);
+double getTrigramProb(const char*, const char*, const char*);
 
 void viterbi(size_t);
 vector<string> backTrack();
@@ -153,19 +154,19 @@ main(int argc, char** argv) {
 
     //viterbi
     vector<string> sentence;
-//    for (size_t sample = 0; sample < seq.size(); sample++) {
-//        viterbi(sample);
+    for (size_t sample = 0; sample < seq.size(); sample++) {
+        viterbi(sample);
 
-        viterbi(1);
-        printDeltaMatrix(delta);
-        printPsiMatrix(psi);
+        //viterbi(1);
+        //printDeltaMatrix(delta);
+        //printPsiMatrix(psi);
         sentence = backTrack();
         cout << "<s> ";
         for (size_t w = 0; w < sentence.size(); w++) {
             cout << sentence[w] << " ";
         }
         cout << "</s>\n";
-//    }
+    }
     return 0;
 }
 
@@ -186,7 +187,7 @@ strGetTok(const string& str, string& tok, size_t pos, const char del)
 }
 
 // Get P(W1) -- unigram
-static double
+double
 getUnigramProb(const char *w1)
 {
     VocabIndex wid1 = voc.getIndex(w1);
@@ -201,7 +202,7 @@ getUnigramProb(const char *w1)
 
 
 // Get P(W2 | W1) -- bigram
-static double
+double
 getBigramProb(const char *w1, const char *w2)
 {
     VocabIndex wid1 = voc.getIndex(w1);
@@ -217,7 +218,7 @@ getBigramProb(const char *w1, const char *w2)
 }
 
 // Get P(W3 | W1, W2) -- trigram
-static double
+double
 getTrigramProb(const char *w1, const char *w2, const char *w3)
 {
     VocabIndex wid1 = voc.getIndex(w1);
@@ -297,6 +298,7 @@ viterbi(size_t k)
             //double bj = getUnigramProb(w2.c_str());
             for (size_t i = 0; i < vi.size(); i++) {
                 w1 = shorttoBig5(vi[i]);
+                //cout << w1 << " " << w2 << endl;
                 double aij = getBigramProb((const char*)(w1), (const char*)(w2));
                 currProb = delta[t-1][i] + aij;
                 if (currProb > maxProb) {
