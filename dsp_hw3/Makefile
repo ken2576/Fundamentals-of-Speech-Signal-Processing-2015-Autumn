@@ -5,8 +5,8 @@ MACHINE_TYPE ?= i686-m64
 LM ?= srilm-1.5.10/bigram.lm
 
 CXX = g++
-CXXFLAGS = -O3 -I$(SRIPATH)/include -w
-#CXXFLAGS = -g -Wall -I$(SRIPATH)/include -w
+#CXXFLAGS = -O3 -I$(SRIPATH)/include -w
+CXXFLAGS = -g -Wall -I$(SRIPATH)/include -w
 vpath lib%.a $(SRIPATH)/lib/$(MACHINE_TYPE)
 
 TARGET = mydisambig

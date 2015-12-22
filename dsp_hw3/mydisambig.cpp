@@ -337,11 +337,13 @@ viterbi(size_t k)
         double maxProb;
         unsigned short maxStateWord;
 
+        delta.resize(seq[k].size() + 2);
+        psi.resize(seq[k].size() + 2);
+
         str = seq[k][0];
         key = big5toShort(str.c_str());
         it = tb.find(key);
         vi = (*it).second;
-
 
         str = seq[k][1];
         key = big5toShort(str.c_str());
@@ -350,7 +352,6 @@ viterbi(size_t k)
 
         for (size_t j = 0; j < vj.size(); j++) {
             maxProb = -INFINITY;
-            maxStateWord = 0;
             w2 = shorttoBig5(vj[j]);
             for (size_t i = 0; i < vi.size(); i++) {
                 w1 = shorttoBig5(vi[i]);
@@ -358,32 +359,28 @@ viterbi(size_t k)
                 currProb = delta[0][i] + aij;
                 if (currProb > maxProb) {
                     maxProb = currProb;
-                    maxStateWord = vi[i];
                 }
             }
             delta[1].push_back(maxProb);
-            psi[1].push_back(maxStateWord);
         }
 
 
-        for (t = 2; t <= seq[k].size(); t++) {
+        for (t = 2; t < seq[k].size(); t++) {
             str = seq[k][t-2];
             key = big5toShort(str.c_str());
             it = tb.find(key);
             vi = (*it).second;
-            
+
             str = seq[k][t-1];
             key = big5toShort(str.c_str());
             it = tb.find(key);
             vj = (*it).second;
-            
-            if (t != seq[k].size()) {
-                str = seq[k][t];
-                key = big5toShort(str.c_str());
-                it = tb.find(key);
-                vk = (*it).second;
-            }
-            
+
+            str = seq[k][t];
+            key = big5toShort(str.c_str());
+            it = tb.find(key);
+            vk = (*it).second;
+
             for (size_t k = 0; k < vk.size(); k++) {
                 maxProb = -INFINITY;
                 maxStateWord = 0;
@@ -392,19 +389,12 @@ viterbi(size_t k)
                     w2 = shorttoBig5(vj[j]);
                     for (size_t i = 0; i < vi.size(); i++) {
                         w1 = shorttoBig5(vi[i]);
-                        double aij;
-                        if (t != seq[k].size()) {
-                            aij = getTrigramProb((const char*)(w1), (const char*)(w2),
-                                    (const char*)(w3));
-                        }
-                        else {
-                            aij = getTrigramProb((const char*)(w1), (const char*)(w2),
-                                    "</s>");
-                        }
+                        double aij = getTrigramProb((const char*)(w1), (const char*)(w2),
+                                (const char*)(w3));
                         currProb = delta[t-1][i] + aij;
                         if (currProb > maxProb) {
                             maxProb = currProb;
-                            maxStateWord = vj[j];
+                            maxStateWord = vi[i];
                         }
                     }
                 }
@@ -419,7 +409,8 @@ vector<string>
 backTrack()
 {
     vector<string> ret;
-    for (size_t t = delta.size()-1; t > 0; --t) {
+    size_t end = 1;
+    for (size_t t = delta.size()-1; t > end; --t) {
         double maxProb = -INFINITY;
         unsigned short maxStateWord = 0;
         for (size_t i = 0; i < delta[t].size(); i++) {
