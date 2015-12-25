@@ -7,8 +7,7 @@
 #include <sstream>
 #include <limits>
 #include <algorithm>
-#include "./srilm-1.5.10/lm/src/Ngram.h"
-#include "./srilm-1.5.10/lm/src/Vocab.h"
+#include "Ngram.h"
 
 using namespace std;
 
