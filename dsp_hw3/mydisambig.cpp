@@ -321,8 +321,11 @@ viterbi(size_t k)
         double maxProb = -INFINITY;
         unsigned short maxStateWord = 0;
         for (size_t i = 0; i < delta[end].size(); i++) {
-            if (delta[end][i] > maxProb) {
-                maxProb = delta[end][i];
+            w1 = shorttoBig5(vi[i]);
+            double aij = getBigramProb((const char*)(w1), "</s>");
+            currProb = delta[end][i] + aij;
+            if (currProb > maxProb) {
+                maxProb = currProb;
                 maxStateWord = vi[i];
             }
         }
@@ -371,19 +374,19 @@ viterbi(size_t k)
             key = big5toShort(str.c_str());
             it = tb.find(key);
             vi = (*it).second;
-            
+
             str = seq[k][t-1];
             key = big5toShort(str.c_str());
             it = tb.find(key);
             vj = (*it).second;
-            
+
             if (t != seq[k].size()) {
                 str = seq[k][t];
                 key = big5toShort(str.c_str());
                 it = tb.find(key);
                 vk = (*it).second;
             }
-            
+
             for (size_t k = 0; k < vk.size(); k++) {
                 maxProb = -INFINITY;
                 maxStateWord = 0;
