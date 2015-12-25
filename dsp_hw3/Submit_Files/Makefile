@@ -33,7 +33,7 @@ map:
 	@#TODO How to map?
 	@echo "Mapping!"
 	@#./mapping $(FROM) $(TO)
-	@matlab mapping.m $(FROM) $(TO)
+	@matlab mapping.m
 	@#python mapping.py $(FROM) $(TO)
 	@#sh mapping.sh $(FROM) $(TO)
 	@#perl mapping.pl Big5-ZhuYin.map ZhuYin-Big5.map

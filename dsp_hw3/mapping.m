@@ -1,4 +1,4 @@
-fid=fopen('Big5-ZhuYin.map', 'r', 'n', 'big5');
+fid=fopen('./Big5-ZhuYin.map', 'r', 'n', 'big5');
 totalNum = 13009;
 tline=fgetl(fid);
 tline=native2unicode(tline);
@@ -40,7 +40,7 @@ end
 
 fclose(fid);
 
-fid=fopen('ZhuYin-Big5.map', 'w', 'n', 'big5');
+fid=fopen('./ZhuYin-Big5.map', 'w', 'n', 'big5');
 
 index = map.keys;
 for m=1:35
